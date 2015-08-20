@@ -1,0 +1,22 @@
+{
+  "name": "nearly-open-311",
+  "version": "1.0.0",
+  "description": "A module to mock HTTP form submissions to Chicago's 311 system, allowing users to submit for any category in the system, rather than just the subset allowed in the Open311 system.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Chicago",
+    "311"
+  ],
+  "author": "Ben Wilhelm <ben@doublebeamdesign.com> (http://doublebeamdesign.com/)",
+  "license": "MIT",
+  "dependencies": {
+    "async": "^1.4.2",
+    "htmlparser": "^1.7.7",
+    "lodash": "^3.10.1",
+    "request": "^2.60.0",
+    "tough-cookie": "^2.0.0"
+  }
+}
