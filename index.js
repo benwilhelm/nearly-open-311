@@ -1,29 +1,30 @@
 var _ = require("lodash");
 var async = require('async');
 var request = require('request');
-var requestTypes =
+var yaml = require("js-yaml");
+var fs = require("fs");
+var requestTypes = yaml.safeLoad(fs.readFileSync('./data/_request-types.yml'));
 
 module.exports = function(){
   var cookieJar = request.jar();
   var req = request.default({jar: cookieJar, timeout: 30000});
 
-  return {
+  var requestObject = {
     /**
      * Initialize the request with an address and request type.
      * @param opts - object containing keys requestType, streetNumber, streetDirection, streetName, streetSuffix, streetSuffixDir
      * @param callback - callback function with signature function(err, request)
      */
-    initialize: function(/*opts, */callback) {
-      opts = {
+    initialize: function(opts, callback) {
+      opts = _.merge({
         requestType: "AAE",
         streetNumber: 4955,
         streetDirection: "N",
         streetName: "Damen",
         streetSuffix: "Ave"
-      }
+      }, opts)
 
       var urls = generateUrls(opts)
-      console.log(urls);
 
       async.series([
         function(next){
@@ -56,6 +57,8 @@ module.exports = function(){
       })
     }
   }
+
+  return requestObject;
 }
 
 var defaultUrls = {
