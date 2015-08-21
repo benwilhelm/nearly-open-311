@@ -1,0 +1,19 @@
+{
+    "invInterfaceType":"WEBINTAK",
+    "invSRTypeCode":"",
+    "invLocRequired":"",
+    "invStreetNumRequired":"",
+    "invStreetNumber":"4955",
+    "invStreetPrefix":"N",
+    "invStreetName":"DAMEN",
+    "invStreetSuffix":"AVE",
+    "invStreetSuffixDir":"",
+    "invCity":"",
+    "invStateCode":"",
+    "invZipCode":"",
+    "invCounty":"",
+    "invBuildingName":"",
+    "invFloor":"",
+    "invUnitNumber":"",
+    "invJurisdictionCode":"CHICAGO"
+}

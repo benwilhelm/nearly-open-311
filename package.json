@@ -4,7 +4,7 @@
   "description": "A module to mock HTTP form submissions to Chicago's 311 system, allowing users to submit for any category in the system, rather than just the subset allowed in the Open311 system.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test/index.test.js -t 30000"
   },
   "keywords": [
     "Chicago",
@@ -19,5 +19,10 @@
     "lodash": "^3.10.1",
     "request": "^2.60.0",
     "tough-cookie": "^2.0.0"
+  },
+  "devDependencies": {
+    "mocha": "^2.2.5",
+    "should": "^7.0.4",
+    "sinon": "^1.16.1"
   }
 }
