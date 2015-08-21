@@ -98,11 +98,21 @@ module.exports = function(){
 
     var dataKeys = _.keys(data);
     _.each(fieldDefinitions, function(field, key) {
+
+      // check for required field
       if (field.required && !_.contains(dataKeys, key)) {
         invalid = true;
         errorObj.errors[key] = key + " is a required field.";
       }
+
+      // check for option-based questions
+      if (field.options && data[key] && !_.contains(field.options, data[key])) {
+        invalid = true;
+        errorObj.errors[key] = key + " must be one of: " + field.options.join(' | ');
+      }
     });
+
+
 
     if (invalid) {
       return errorObj;
