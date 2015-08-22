@@ -1,0 +1,39 @@
+fn_PETCO_WHEREDI1:
+  prompt: Where did you observe the dust?
+  options:
+    - House
+    - Garage
+    - Park
+    - Vehicle
+    - Other
+
+fn_PETCO_IFOTHERP:
+  prompt: If other please describe?
+
+fn_PETCO_HOWWOULD:
+  prompt: How would you describe the dust? (e.g., color, thickness, odor, etc.)
+
+fn_PETCO_WHATWER1:
+  prompt: What were the wind conditions?
+  options:
+    - Calm
+    - Strong
+    - Moderate
+
+fn_PETCO_WHATDIR1:
+  prompt: What direction was the wind blowing?
+  options:
+    - N
+    - S
+    - E
+    - W
+    - NE
+    - NW
+    - SE
+    - SW
+
+fn_PETCO_FROMWHER:
+  prompt: From where was the dust blowing? (Please include approximate address.)
+
+fn_PETCO_SPECIFYT:
+  prompt: Specify the date and time the dust was observed?

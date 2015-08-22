@@ -4,7 +4,7 @@
   "description": "A module to mock HTTP form submissions to Chicago's 311 system, allowing users to submit for any category in the system, rather than just the subset allowed in the Open311 system.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha test/index.test.js -t 30000"
+    "test": "mocha test/index.test.js"
   },
   "keywords": [
     "Chicago",
