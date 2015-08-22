@@ -4,10 +4,11 @@ var request = require('request');
 var yaml = require("js-yaml");
 var fs = require("fs");
 var requestTypes = yaml.safeLoad(fs.readFileSync(__dirname + '/data/request-types.yml'));
+var cheerio = require('cheerio');
 
 module.exports = function(){
-  var cookieJar = request.jar();
-  var req = request.defaults({jar: cookieJar, timeout: 30000});
+  var cookieJar, req;
+  var initialized = false;
   var fieldDefinitions = {};
   var contactData = {};
   var contactDataIsValid = false;
@@ -34,52 +35,51 @@ module.exports = function(){
      */
     initialize: function(opts, callback) {
 
+      cookieJar = request.jar();
+      req = request.defaults({jar: cookieJar, timeout: 30000});
+
       urls = generateUrls(opts);
       fieldDefinitions = getFieldDefinitions(opts.requestType);
       requestType = opts.requestType;
 
-      async.series([
+      async.waterfall([
+
+        // getting session
         function(next){
           req.get({
             url: urls.reset
           }, next)
         },
-        function(next) {
-          var postData = {
-            invInterfaceType: "WEBINTAK",
-            invJurisdictionCode: "CHICAGO",
-            invStreetNumber: opts.streetNumber,
-            invStreetPrefix: opts.streetDirection,
-            invStreetName: opts.streetName,
-            invStreetSuffix: opts.streetSuffix,
-            invSRTypeCode:"",
-            invLocRequired:"",
-            invStreetNumRequired:"",
-            invStreetSuffixDir:"",
-            invCity:"CHICAGO",
-            invStateCode:"IL",
-            invZipCode:"",
-            invCounty:"",
-            invBuildingName:"",
-            invFloor:"",
-            invUnitNumber:""
-          }
 
-        //   var postData = require(__dirname + "/test-location.json");
+        // setting location of complaint
+        function(res, text, next) {
+          var postData = getFormDataFromMarkup(text);
+          postData.invStreetNumber = opts.streetNumber,
+          postData.invStreetPrefix = opts.streetDirection,
+          postData.invStreetName   = opts.streetName,
+          postData.invStreetSuffix = opts.streetSuffix,
+
           req.post({
             url: urls.setLocation,
             form: postData
           }, next)
         },
-        function(next) {
-          // console.log('setting request type')
+
+        // setting service request type
+        function(res, text, next) {
           req.get({
             url: urls.selectService
           }, next)
+        },
+
+        // seeding requestFormData with .NET hidden fields
+        function(res, text, next) {
+          var formData = getFormDataFromMarkup(text);
+          requestFormData = _.merge(formData, requestFormData);
+          initialized = true;
+          next(null, text);
         }
-      ], function(err, rslt){
-        callback(err, rslt[2])
-      })
+      ], callback)
     },
 
     /**
@@ -90,16 +90,36 @@ module.exports = function(){
       formDataIsValid = false;
       var validated = validateFormData(data, requestType);
       if (validated === true) {
-        requestFormData = data;
+        requestFormData = _.merge(requestFormData, data);
         formDataIsValid = true;
       }
       return validated;
     },
 
+    getFormData: function() {
+      if (!initialized) throw new Error("Please call initialize before calling getFormData")
+      return requestFormData;
+    },
+
     getForm: function() {
+      if (!initialized) throw new Error("Please call initialize before calling getForm")
       return fieldDefinitions;
     },
 
+    getRequestTypes: function() {
+      if (!initialized) throw new Error("Please call initialize before calling getRequestTypes")
+      return requestTypes;
+    },
+
+    getUserInput: function(idx) {
+      if (!initialized) throw new Error("Please call initialize before calling getUserInput")
+
+      if (idx && fieldDefinitions[idx])
+        return requestFormData[idx];
+
+      var keys = _.keys(fieldDefinitions);
+      return _.pick(requestFormData, keys);
+    },
 
 
     /**
@@ -143,18 +163,20 @@ module.exports = function(){
 
       var filteredContactData = convertContactData(contactData, requestType);
       var compositeRequestData = _.merge(requestFormData, filteredContactData);
-      compositeRequestData.invSRShowLocation = "ALLOWLOC";
-      compositeRequestData.invInterfaceType  = "WEBINTAK";
-      compositeRequestData.invJurisdictionCode = "DALLAS"; // seriously?
-      compositeRequestData.invSRTypeCode = requestType;
-      // console.log(compositeRequestData);
 
-      // compositeRequestData = require(__dirname + "/test-review.json");
+      var requiredKeys = _.keys(require("./test-review.json"))
+      var requestKeys = _.keys(compositeRequestData);
+      var missingKeys = [];
+      _.each(requiredKeys, function(key){
+        if (!_.contains(requestKeys, key)) {
+          missingKeys.push(key);
+        }
+      })
 
       req.post({ url: urls.reviewRequest, form: compositeRequestData }, function(err, req, txt){
         if (err)  return callback(err);
         if (!txt) return callback({reason: "An unknown error occurred."})
-        callback(arguments);
+        callback(err, txt);
       })
     },
 
@@ -181,7 +203,7 @@ module.exports = function(){
 
     if (!requestType) {
       invalid = true;
-      errorObj.errors.requestType = "RequestType is not yet defined. Make sure you're initializing the request before submitting form data.";
+      errorObj.errors.requestType = "You have not defined a request type. Make sure you're initializing the request before submitting form data.";
     }
 
     var dataKeys = _.keys(data);
@@ -238,17 +260,22 @@ module.exports = function(){
 
 
 var defaultUrls = {
-  reset: "https://servicerequest.cityofchicago.org/web_intake_chic/Controller?op=reset",
+  reset: "https://servicerequest.cityofchicago.org/web_intake_chic/Controller?op=locform",
   setLocation: "https://servicerequest.cityofchicago.org/web_intake_chic/Controller?op=locvalidate",
-  selectService: "https://servicerequest.cityofchicago.org/web_intake_chic/Controller?op=csrform&invSRType=",
+  selectService: "https://servicerequest.cityofchicago.org/web_intake_chic/Controller?op=csrform",
   reviewRequest: "https://servicerequest.cityofchicago.org/web_intake_chic/Controller?op=review",
   submitRequest: "https://servicerequest.cityofchicago.org/web_intake_chic/Controller?op=csrupdate"
 }
 
 function generateUrls(opts) {
   var urls = _.clone(defaultUrls);
-  urls.selectService += opts.requestType;
-  urls.selectService += "&invSRDesc=" + encodeURIComponent(requestTypes[opts.requestType]);
+  var typeString = "&invSRType=";
+  typeString += opts.requestType;
+  typeString += "&invSRDesc=" + encodeURIComponent(requestTypes[opts.requestType]);
+
+  urls.setLocation += typeString;
+  urls.reset += typeString;
+  urls.reset += "&locreq=Y&stnumreqd=Y";
   return urls;
 }
 
@@ -298,8 +325,9 @@ function convertContactData(data, requestType) {
     }
 
     var convertedData = {};
-    _.each(fieldMap, function(chiKey, key){
-        convertedData[chiKey] = data[key] || "";
+    _.each(data, function(val, key){
+        var chiKey = fieldMap[key];
+        convertedData[chiKey] = val;
     })
 
     if (data.phone1 && data.textUpdates) {
@@ -322,4 +350,18 @@ function normalizePhone(input) {
     }
 
     return match[0]
+}
+
+function getFormDataFromMarkup(text) {
+  var returnObj = {};
+  var $ = cheerio.load(text);
+  var $inputs = $("select, input, textarea");
+  $inputs.each(function(idx, el){
+    var key = $(el).attr('name');
+    if (key) {
+      returnObj[key] = $(el).val();
+    }
+  })
+
+  return returnObj;
 }

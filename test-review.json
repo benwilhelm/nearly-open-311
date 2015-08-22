@@ -42,7 +42,7 @@
     "req_part_ind_ParticipantZipCode_CALLER":"N",
     "invParticipantZipCode_CALLER":"",
     "req_part_ind_ParticipantEmailAddress_CALLER":"N",
-    "invParticipantEmailAddress_CALLER":"",
+    "invParticipantEmailAddress_CALLER":"test@test.com",
     "req_part_ind_ParticipantContactPhoneType_CALLER_1":"N",
     "invParticipantContactPhoneType_CALLER_1":"",
     "req_part_ind_ParticipantContactPhoneNumber_CALLER_1":"N",
