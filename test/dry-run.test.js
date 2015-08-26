@@ -17,17 +17,16 @@ describe("module request: dry run", function(){
 
   it("ok", function(done){
 
-    var opts = {
-      requestType: "AAE",
-      streetNumber: 4955,
-      streetDirection: "N",
-      streetName: "Damen",
-      streetSuffix: "Ave"
-    }
 
-    var r311 = req311();
+    var r311 = req311.new("AAE");
     async.waterfall([
       function(next){
+        var opts = {
+          streetNumber: 4955,
+          streetDirection: "N",
+          streetName: "Damen",
+          streetSuffix: "Ave"
+        }
         r311.initialize(opts, next)
       },
       function(text, next){
